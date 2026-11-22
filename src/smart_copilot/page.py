@@ -61,9 +61,19 @@ async function load() {
     const box = document.createElement("div");
     box.className = "ticket";
     line(box, "meta", "Category: " + t.category + " | Urgency: " + t.urgency +
-      " | Sentiment: " + t.sentiment);
+      " | Sentiment: " + t.sentiment + " | Source: " + t.source);
     line(box, "message", t.message);
     line(box, "draft", "Draft: " + t.draft_reply);
+    line(box, "recommendation", "Recommendation: " + t.recommended_solution);
+    if (t.source_snippets.length > 0) {
+      t.source_snippets.forEach(function(s) {
+        line(box, "snippet", "Source: " + s);
+      });
+    } else {
+      const em = document.createElement("em");
+      em.textContent = "No source snippets available.";
+      box.appendChild(em);
+    }
     const del = document.createElement("button");
     del.textContent = "Delete";
     del.addEventListener("click", async () => {

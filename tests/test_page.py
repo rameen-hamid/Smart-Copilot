@@ -23,7 +23,7 @@ def test_page_loads_tickets_from_api_and_has_delete_button(client: TestClient) -
 
 def test_page_shows_category_urgency_sentiment_and_draft(client: TestClient) -> None:
     html = client.get("/").text
-    for field in ("t.category", "t.urgency", "t.sentiment", "t.draft_reply"):
+    for field in ("t.category", "t.urgency", "t.sentiment", "t.draft_reply", "t.source"):
         assert field in html
 
 
@@ -34,7 +34,6 @@ def test_page_renders_ticket_text_without_html_injection(client: TestClient) -> 
 
 
 # Agent sign-in: login page
-
 
 def test_login_page_has_one_username_one_password_one_submit() -> None:
     from smart_copilot.page import login_page
@@ -119,3 +118,21 @@ def test_get_root_signed_in_serves_script(client: TestClient) -> None:
     response = client.get("/")
     assert response.status_code == 200
     assert "toLoginIfRedirected" in response.text
+
+
+# Task 6.2 – agent-desk fields on the page
+
+
+def test_index_shows_recommended_solution_field(client: TestClient) -> None:
+    # Requirement 7.1
+    assert "t.recommended_solution" in client.get("/").text
+
+
+def test_index_shows_source_snippets_field(client: TestClient) -> None:
+    # Requirement 7.1
+    assert "t.source_snippets" in client.get("/").text
+
+
+def test_index_shows_no_snippets_message(client: TestClient) -> None:
+    # Requirement 7.3: empty snippets → "No source snippets available."
+    assert "No source snippets" in client.get("/").text

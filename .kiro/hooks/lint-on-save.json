@@ -1,0 +1,15 @@
+{
+  "version": "v1",
+  "hooks": [
+    {
+      "name": "Lint on save",
+      "trigger": "PostFileSave",
+      "description": "Run ruff on Python files after each save",
+      "matcher": "\\.py$",
+      "action": {
+        "type": "command",
+        "command": "uv run ruff check"
+      }
+    }
+  ]
+}

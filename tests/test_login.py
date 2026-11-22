@@ -30,6 +30,9 @@ SYNTHETIC_TICKET = {
     "urgency": "low",
     "sentiment": "neutral",
     "draft_reply": "Thank you.",
+    "source": "local",
+    "recommended_solution": "Review the ticket manually.",
+    "source_snippets": [],
 }
 
 
@@ -123,7 +126,17 @@ def test_signed_in_queue_order_and_shape(agent_client: TestClient) -> None:
     ]
     assert [t["urgency"] for t in tickets] == ["high", "high", "medium", "low"]
     for t in tickets:
-        assert set(t) == {"id", "message", "category", "urgency", "sentiment", "draft_reply"}
+        assert set(t) == {
+            "id",
+            "message",
+            "category",
+            "urgency",
+            "sentiment",
+            "draft_reply",
+            "source",
+            "recommended_solution",
+            "source_snippets",
+        }
 
 
 # Requirement 3: wrong sign-in

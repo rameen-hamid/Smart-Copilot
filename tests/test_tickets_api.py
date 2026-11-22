@@ -29,6 +29,9 @@ def test_create_returns_201_and_full_ticket(client: TestClient) -> None:
         "urgency",
         "sentiment",
         "draft_reply",
+        "source",
+        "recommended_solution",
+        "source_snippets",
     }
     assert str(uuid.UUID(ticket["id"], version=4)) == ticket["id"]
     assert ticket["message"] == "Urgent refund, I am furious"
@@ -36,6 +39,12 @@ def test_create_returns_201_and_full_ticket(client: TestClient) -> None:
     assert ticket["urgency"] == "high"
     assert ticket["sentiment"] == "negative"
     assert ticket["draft_reply"] == draft_reply("billing")
+    # BEDROCK_MODEL_ID is unset in tests → local classifier (Requirement 6.1)
+    assert ticket["source"] == "local"
+    # Empty KB fixture → no snippets; fallback recommendation (agent-desk Req 3.1, 3.2)
+    assert ticket["source_snippets"] == []
+    assert isinstance(ticket["recommended_solution"], str)
+    assert len(ticket["recommended_solution"]) > 0
 
 
 def test_message_is_stored_unchanged(client: TestClient, tickets_file: Path) -> None:
