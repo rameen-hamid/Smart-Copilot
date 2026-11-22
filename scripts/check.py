@@ -56,25 +56,29 @@ def main() -> int:
     env["DO_NOT_TRACK"] = "1"
 
     failed: list[str] = []
+    missing: list[str] = []
     for name, cmd in _commands():
         print(f"\n== {name}: {' '.join(cmd)}", flush=True)
         exe = shutil.which(cmd[0])
         if exe is None:
-            print(f"{name}: '{cmd[0]}' not found on PATH", file=sys.stderr)
-            failed.append(name)
+            print(f"{name}: '{cmd[0]}' is not installed or not on PATH", file=sys.stderr)
+            missing.append(name)
             continue
         try:
             result = subprocess.run([exe, *cmd[1:]], cwd=ROOT, env=env, check=False)
         except OSError as exc:
             print(f"{name}: could not run: {exc}", file=sys.stderr)
-            failed.append(name)
+            missing.append(name)
             continue
         if result.returncode != 0:
             failed.append(name)
 
     print()
+    if missing:
+        print(f"NOT RUN (tool missing): {', '.join(missing)}")
     if failed:
         print(f"FAILED: {', '.join(failed)}")
+    if missing or failed:
         return 1
     print("All checks passed.")
     return 0
