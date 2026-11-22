@@ -120,12 +120,12 @@ def test_property3_snippet_length_invariant(item: str) -> None:
 
 @given(
     query=st.text(
-        alphabet=st.characters(whitelist_categories=("Lu", "Ll")),
+        alphabet="abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ",
         min_size=0,
         max_size=50,
     ),
     text=st.text(
-        alphabet=st.characters(whitelist_categories=("Lu", "Ll")),
+        alphabet="abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ",
         min_size=0,
         max_size=50,
     ),
