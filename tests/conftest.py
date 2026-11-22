@@ -4,6 +4,7 @@ from pathlib import Path
 import pytest
 from fastapi.testclient import TestClient
 
+from smart_copilot.bedrock import get_analyzer
 from smart_copilot.main import app
 
 
@@ -12,6 +13,13 @@ def tickets_file(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
     path = tmp_path / "tickets.json"
     monkeypatch.setenv("TICKETS_FILE", str(path))
     return path
+
+
+@pytest.fixture(autouse=True)
+def reset_analyzer_override() -> Iterator[None]:
+    """Ensure no get_analyzer override leaks between tests."""
+    yield
+    app.dependency_overrides.pop(get_analyzer, None)
 
 
 @pytest.fixture

@@ -23,7 +23,7 @@ def test_page_loads_tickets_from_api_and_has_delete_button(client: TestClient) -
 
 def test_page_shows_category_urgency_sentiment_and_draft(client: TestClient) -> None:
     html = client.get("/").text
-    for field in ("t.category", "t.urgency", "t.sentiment", "t.draft_reply"):
+    for field in ("t.category", "t.urgency", "t.sentiment", "t.draft_reply", "t.source"):
         assert field in html
 
 

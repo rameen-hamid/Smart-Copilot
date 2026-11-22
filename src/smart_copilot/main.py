@@ -1,11 +1,17 @@
 import uuid
-from typing import Any
+from typing import Annotated, Any
 
-from fastapi import FastAPI, HTTPException, Request, Response
+from fastapi import Depends, FastAPI, HTTPException, Request, Response
 from fastapi.responses import HTMLResponse, JSONResponse
 from pydantic import BaseModel, Field, field_validator
 
 from smart_copilot import storage
+from smart_copilot.bedrock import (
+    BedrockAnalysisError,
+    BedrockAnalyzer,
+    get_analyzer,
+    is_valid_analysis,
+)
 from smart_copilot.classifier import (
     classify_category,
     classify_sentiment,
@@ -38,6 +44,37 @@ class Ticket(BaseModel):
     urgency: str
     sentiment: str
     draft_reply: str
+    source: str
+
+
+def _local_fields(message: str) -> dict[str, Any]:
+    category = classify_category(message)
+    return {
+        "category": category,
+        "urgency": classify_urgency(message),
+        "sentiment": classify_sentiment(message),
+        "draft_reply": draft_reply(category),
+    }
+
+
+def analyze_or_fallback(
+    message: str,
+    analyzer: BedrockAnalyzer | None,
+) -> tuple[dict[str, Any], str]:
+    """Return (analysis_fields, source). Falls back to local on any Bedrock problem."""
+    if analyzer is not None:
+        try:
+            result = analyzer.analyze(message)
+            if is_valid_analysis(result):
+                return {
+                    "category": result["category"],
+                    "urgency": result["urgency"],
+                    "sentiment": result["sentiment"],
+                    "draft_reply": result["draft_reply"],
+                }, "bedrock"
+        except BedrockAnalysisError:
+            pass
+    return _local_fields(message), "local"
 
 
 @app.exception_handler(storage.TicketStoreError)
@@ -56,15 +93,16 @@ def index() -> str:
 
 
 @app.post("/tickets", status_code=201, response_model=Ticket)
-def create_ticket(body: TicketCreate) -> dict[str, Any]:
-    category = classify_category(body.message)
-    ticket = {
+def create_ticket(
+    body: TicketCreate,
+    analyzer: Annotated[BedrockAnalyzer | None, Depends(get_analyzer)],
+) -> dict[str, Any]:
+    fields, source = analyze_or_fallback(body.message, analyzer)
+    ticket: dict[str, Any] = {
         "id": str(uuid.uuid4()),
         "message": body.message,
-        "category": category,
-        "urgency": classify_urgency(body.message),
-        "sentiment": classify_sentiment(body.message),
-        "draft_reply": draft_reply(category),
+        **fields,
+        "source": source,
     }
     storage.add_ticket(ticket)
     return ticket
