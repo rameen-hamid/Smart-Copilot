@@ -7,9 +7,13 @@
 ├── .kiro/steering/        Steering rules
 ├── src/smart_copilot/     Application package (import as `smart_copilot`)
 │   ├── __init__.py
-│   └── main.py            FastAPI `app` and `/health` route
-├── tests/                 pytest tests. Create when the first test is added.
-├── data/tickets.json      Synthetic tickets. Create when a spec needs it.
+│   ├── main.py            FastAPI `app`, routes
+│   ├── classifier.py      Keyword classifier and draft reply templates
+│   ├── storage.py         Read and write the tickets JSON file
+│   └── page.py            HTML page served at `GET /`
+├── tests/                 pytest tests. `conftest.py` points `TICKETS_FILE` at a temp file.
+├── docs/                  BRD and other specs
+├── data/tickets.json      Synthetic tickets. Created by the app at runtime.
 ├── pyproject.toml
 ├── uv.lock
 ├── .python-version

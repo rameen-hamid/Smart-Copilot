@@ -16,7 +16,7 @@
 
 ## Data
 
-- Tickets live in `data/tickets.json` until a spec says otherwise.
+- Tickets live in `data/tickets.json` until a spec says otherwise. The `TICKETS_FILE` environment variable overrides the path. Tests MUST set it.
 - Do not invent S3 retrieval or any other storage.
 - Synthetic tickets only. No real personal, financial, or health data.
 
