@@ -42,7 +42,8 @@ SYNTHETIC_TICKET = {
 
 def _sign_in(c: TestClient) -> None:
     response = c.post("/login", data={"username": "test-agent", "password": FAKE_PASSWORD})
-    assert response.status_code == 303
+    # 200 + JS navigation (proxy-safe; was 303)
+    assert response.status_code == 200
 
 
 @pytest.fixture
@@ -75,7 +76,7 @@ def test_get_login_without_session(anon_client: TestClient) -> None:
 def test_get_login_with_session(agent_client: TestClient) -> None:
     response = agent_client.get("/login")
     assert response.status_code == 200
-    assert 'action="/login"' in response.text
+    assert 'action="login"' in response.text
 
 
 def test_get_login_when_not_configured(
@@ -93,8 +94,9 @@ def test_correct_login_redirects_and_sets_cookie(anon_client: TestClient) -> Non
     response = anon_client.post(
         "/login", data={"username": "test-agent", "password": FAKE_PASSWORD}
     )
-    assert response.status_code == 303
-    assert response.headers["location"] == "/"
+    # 200 — serves the ticket desk directly (no redirect, works behind any proxy)
+    assert response.status_code == 200
+    assert '<textarea id="message"' in response.text   # ticket desk is present
     cookie = response.headers["set-cookie"].lower()
     assert cookie.startswith("session=")
     assert "httponly" in cookie
@@ -148,7 +150,7 @@ def test_wrong_password_gives_401_message(anon_client: TestClient) -> None:
     )
     assert response.status_code == 401
     assert INVALID in response.text
-    assert 'action="/login"' in response.text
+    assert 'action="login"' in response.text
     assert "set-cookie" not in response.headers
 
 
@@ -236,8 +238,7 @@ def test_retry_after_failure_signs_in(anon_client: TestClient) -> None:
     response = anon_client.post(
         "/login", data={"username": "test-agent", "password": FAKE_PASSWORD}
     )
-    assert response.status_code == 303
-    assert response.headers["location"] == "/"
+    assert response.status_code == 200
     assert anon_client.get("/tickets").status_code == 200
 
 
@@ -363,8 +364,7 @@ def test_public_routes_with_bad_cookie(anon_client: TestClient) -> None:
     response = anon_client.post(
         "/login", data={"username": "test-agent", "password": FAKE_PASSWORD}
     )
-    assert response.status_code == 303
-    assert response.headers["location"] == "/"
+    assert response.status_code == 200
 
 
 # Requirement 8: no AWS

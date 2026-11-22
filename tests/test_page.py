@@ -16,7 +16,7 @@ def test_page_has_message_box_submit_and_ticket_list(client: TestClient) -> None
 
 def test_page_loads_tickets_from_api_and_has_delete_button(client: TestClient) -> None:
     html = client.get("/").text
-    assert 'fetch("/tickets")' in html
+    assert 'fetch(API_BASE + "/tickets")' in html
     assert 'method: "DELETE"' in html
     assert 'del.textContent = "Delete"' in html
 
@@ -42,7 +42,7 @@ def test_login_page_has_one_username_one_password_one_submit() -> None:
     assert page.count('name="username"') == 1
     assert page.count('type="password"') == 1
     assert page.count('type="submit"') == 1
-    assert '<form method="post" action="/login">' in page
+    assert '<form method="post" action="login">' in page
 
 
 def test_login_page_error_message_and_empty_fields() -> None:
@@ -86,16 +86,16 @@ def test_index_defines_redirect_helper() -> None:
 
     assert "function toLoginIfRedirected(res)" in INDEX_HTML
     assert "res.redirected" in INDEX_HTML
-    assert 'new URL(res.url).pathname === "/login"' in INDEX_HTML
-    assert 'window.location = "/login"' in INDEX_HTML
+    assert 'new URL(res.url).pathname.endsWith("/login")' in INDEX_HTML
+    assert 'window.location = res.url' in INDEX_HTML
 
 
 def test_index_calls_helper_after_each_fetch() -> None:
     sections = _fetch_sections()
     assert [s.split(")", 1)[0].split(",", 1)[0] for s in sections] == [
-        '"/tickets"',
-        '"/tickets/" + encodeURIComponent(t.id',
-        '"/tickets"',
+        'API_BASE + "/tickets"',
+        'API_BASE + "/tickets/" + encodeURIComponent(t.id',
+        'API_BASE + "/tickets"',
     ]
     for section in sections:
         guard = section.find("if (toLoginIfRedirected(")
