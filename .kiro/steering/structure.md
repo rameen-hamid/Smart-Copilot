@@ -13,6 +13,7 @@
 │   └── page.py            HTML page served at `GET /`
 ├── tests/                 pytest tests. `conftest.py` points `TICKETS_FILE` at a temp file.
 ├── docs/                  BRD and other specs
+├── infra/                 CDK app (synth and template tests only). Not deployed.
 ├── data/tickets.json      Synthetic tickets. Created by the app at runtime.
 ├── pyproject.toml
 ├── uv.lock

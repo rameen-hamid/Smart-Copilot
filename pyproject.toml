@@ -30,3 +30,13 @@ dev = [
     "pytest>=9.2.0",
     "ruff>=0.17.6",
 ]
+infra = [
+    "aws-cdk-lib>=2.278.0",
+    "constructs>=10.8.1",
+]
+
+[tool.uv]
+default-groups = ["dev", "infra"]
+
+[tool.pytest.ini_options]
+pythonpath = ["infra"]
