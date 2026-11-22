@@ -1,11 +1,22 @@
 import uuid
+from collections.abc import Awaitable, Callable
 from typing import Annotated, Any
 
-from fastapi import Depends, FastAPI, HTTPException, Request, Response
-from fastapi.responses import HTMLResponse, JSONResponse
+from fastapi import Depends, FastAPI, Form, HTTPException, Request, Response
+from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
 from pydantic import BaseModel, Field, field_validator
+from starlette.middleware.sessions import SessionMiddleware
 
 from smart_copilot import storage
+from smart_copilot.auth import (
+    PUBLIC_PATHS,
+    SESSION_KEY,
+    SESSION_MAX_AGE,
+    AuthNotConfigured,
+    check_login,
+    is_signed_in,
+    session_secret,
+)
 from smart_copilot.bedrock import (
     BedrockAnalysisError,
     BedrockAnalyzer,
@@ -19,11 +30,13 @@ from smart_copilot.classifier import (
     draft_reply,
 )
 from smart_copilot.kb import get_kb_path, load_kb_documents
-from smart_copilot.page import INDEX_HTML
+from smart_copilot.page import INDEX_HTML, login_page
 from smart_copilot.retriever import retrieve_snippets
 
 MAX_MESSAGE_LENGTH = 5000
 URGENCY_ORDER = {"high": 0, "medium": 1, "low": 2}
+INVALID_LOGIN = "Invalid username or password."
+NOT_CONFIGURED = "Sign-in is not configured."
 
 LOCAL_FALLBACK_RECOMMENDATION: str = (
     "Please review the ticket manually and consult your team's knowledge base "
@@ -31,6 +44,27 @@ LOCAL_FALLBACK_RECOMMENDATION: str = (
 )
 
 app = FastAPI(title="Smart Customer Support Copilot")
+
+
+@app.middleware("http")
+async def require_agent(
+    request: Request, call_next: Callable[[Request], Awaitable[Response]]
+) -> Response:
+    """Deny by default: every path except the public ones needs a signed-in agent."""
+    if request.url.path not in PUBLIC_PATHS and not is_signed_in(request.session):
+        return RedirectResponse("/login", status_code=303)
+    return await call_next(request)
+
+
+# Added after require_agent, so it is the outer middleware and request.session
+# exists when require_agent runs (Starlette puts the last-added middleware outermost).
+app.add_middleware(
+    SessionMiddleware,
+    secret_key=session_secret(),
+    max_age=SESSION_MAX_AGE,
+    same_site="lax",
+    https_only=False,
+)
 
 
 class TicketCreate(BaseModel):
@@ -116,6 +150,26 @@ def store_error_handler(request: Request, exc: storage.TicketStoreError) -> JSON
 @app.get("/health")
 def health() -> dict[str, str]:
     return {"status": "ok"}
+
+
+@app.get("/login", response_class=HTMLResponse)
+def login_form() -> str:
+    return login_page()
+
+
+@app.post("/login", response_model=None)
+def login(
+    request: Request, username: str = Form(""), password: str = Form("")
+) -> Response:
+    try:
+        ok = check_login(username, password)
+    except AuthNotConfigured:
+        return HTMLResponse(login_page(NOT_CONFIGURED), status_code=503)
+    if not ok:
+        return HTMLResponse(login_page(INVALID_LOGIN), status_code=401)
+    request.session.clear()
+    request.session[SESSION_KEY] = username
+    return RedirectResponse("/", status_code=303)
 
 
 @app.get("/", response_class=HTMLResponse)

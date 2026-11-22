@@ -2,6 +2,7 @@ import json
 import uuid
 from pathlib import Path
 
+from conftest import sign_in
 from fastapi.testclient import TestClient
 
 from smart_copilot.classifier import draft_reply
@@ -160,6 +161,7 @@ def test_delete_removes_ticket_from_file(client: TestClient, tickets_file: Path)
 def test_new_app_instance_lists_same_tickets(client: TestClient) -> None:
     created = _create(client, "Hello there")
     with TestClient(app) as second_client:
+        sign_in(second_client)  # the second client needs its own session
         assert second_client.get("/tickets").json() == [created]
 
 

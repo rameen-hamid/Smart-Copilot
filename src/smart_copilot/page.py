@@ -1,3 +1,5 @@
+import html
+
 INDEX_HTML = """<!doctype html>
 <html lang="en">
 <head>
@@ -32,8 +34,19 @@ function line(parent, className, text) {
   parent.appendChild(el);
 }
 
+// The server answers a signed-out request with a 303 to /login. fetch follows it
+// silently, so check where the response ended up before reading its body.
+function toLoginIfRedirected(res) {
+  if (res.redirected && new URL(res.url).pathname === "/login") {
+    window.location = "/login";
+    return true;
+  }
+  return false;
+}
+
 async function load() {
   const res = await fetch("/tickets");
+  if (toLoginIfRedirected(res)) return;
   if (!res.ok) {
     errorBox.textContent = "Could not load tickets (" + res.status + ")";
     return;
@@ -65,6 +78,7 @@ async function load() {
     del.textContent = "Delete";
     del.addEventListener("click", async () => {
       const r = await fetch("/tickets/" + encodeURIComponent(t.id), { method: "DELETE" });
+      if (toLoginIfRedirected(r)) return;
       errorBox.textContent = r.ok ? "" : "Could not delete (" + r.status + ")";
       await load();
     });
@@ -81,6 +95,7 @@ document.getElementById("form").addEventListener("submit", async (event) => {
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ message: box.value }),
   });
+  if (toLoginIfRedirected(res)) return;
   if (res.status === 201) {
     box.value = "";
     errorBox.textContent = "";
@@ -97,3 +112,34 @@ load();
 </body>
 </html>
 """
+
+LOGIN_HTML = """<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Sign in - Ticket Desk</title>
+<style>
+body { font-family: sans-serif; max-width: 24rem; margin: 2rem auto; padding: 0 1rem; }
+label, input, button { display: block; margin: 0.5rem 0; }
+input { width: 100%; box-sizing: border-box; }
+.error { color: #b00020; }
+</style>
+</head>
+<body>
+<h1>Sign in</h1>
+<form method="post" action="/login">
+  <label for="username">Username</label>
+  <input id="username" name="username" autocomplete="username" required>
+  <label for="password">Password</label>
+  <input id="password" type="password" name="password" autocomplete="current-password" required>
+  <button type="submit">Sign in</button>
+  <p id="error" class="error" role="alert">__ERROR__</p>
+</form>
+</body>
+</html>
+"""
+
+
+def login_page(error: str = "") -> str:
+    """Return the login page. The inputs never carry a value, so nothing typed is echoed."""
+    return LOGIN_HTML.replace("__ERROR__", html.escape(error))
