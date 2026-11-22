@@ -23,13 +23,14 @@
 
 ## AWS
 
-- Use AWS only when a spec asks for it. Allowed: Bedrock, Lambda, API Gateway, DynamoDB, S3. Region `us-east-1`.
+- Use AWS only when a spec asks for it. Allowed: Bedrock, Lambda, API Gateway, DynamoDB, S3, and Amazon Cognito (infrastructure definitions only). Region `us-east-1`.
 - Bedrock is the only model API. It does classification, urgency, sentiment, and draft replies.
 - Never use Amazon Comprehend, Amazon Kendra, or Amazon Lookout for Metrics.
 - Keep Bedrock under 1 request per second in the workshop account.
+- A CDK app in `infra/` is allowed for `cdk synth` and template tests only. `cdk deploy`, `cdk bootstrap`, `cdk destroy`, `cdk diff` against an account, and every other command that reads or changes an AWS account stay forbidden without the user's approval.
 
 ## Not in scope
 
-- No CDK, SAM, Terraform, deploy steps, or slides.
+- No SAM, Terraform, deploy steps, or slides. CDK is limited as stated in the AWS section.
 
 See `verify-first.md`, `code-style.md`, `testing.md`, and `git-workflow.md` for the rules that apply to every change.

@@ -20,6 +20,6 @@ A support agent who decides which ticket to answer first, then checks a draft be
 ## Out of scope until an approved spec adds it
 
 - Sending email, live chat, payments, user login.
-- Any AWS service other than Bedrock, Lambda, API Gateway, DynamoDB, and S3.
+- Any AWS service other than Bedrock, Lambda, API Gateway, DynamoDB, S3, and Amazon Cognito. Cognito is allowed for infrastructure definitions only.
 - Amazon Comprehend, Amazon Kendra, and Amazon Lookout for Metrics are excluded.
 - Do not add features beyond the current spec.
