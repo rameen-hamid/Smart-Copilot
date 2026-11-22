@@ -18,10 +18,17 @@ from smart_copilot.classifier import (
     classify_urgency,
     draft_reply,
 )
+from smart_copilot.kb import get_kb_path, load_kb_documents
 from smart_copilot.page import INDEX_HTML
+from smart_copilot.retriever import retrieve_snippets
 
 MAX_MESSAGE_LENGTH = 5000
 URGENCY_ORDER = {"high": 0, "medium": 1, "low": 2}
+
+LOCAL_FALLBACK_RECOMMENDATION: str = (
+    "Please review the ticket manually and consult your team's knowledge base "
+    "for the most appropriate resolution."
+)
 
 app = FastAPI(title="Smart Customer Support Copilot")
 
@@ -45,6 +52,8 @@ class Ticket(BaseModel):
     sentiment: str
     draft_reply: str
     source: str
+    recommended_solution: str
+    source_snippets: list[str]
 
 
 def _local_fields(message: str) -> dict[str, Any]:
@@ -77,6 +86,28 @@ def analyze_or_fallback(
     return _local_fields(message), "local"
 
 
+def recommend_or_fallback(
+    message: str,
+    snippets: list[str],
+    analyzer: BedrockAnalyzer | None,
+) -> str:
+    """Return Bedrock recommendation or LOCAL_FALLBACK_RECOMMENDATION.
+
+    Returns LOCAL_FALLBACK_RECOMMENDATION when:
+    - analyzer is None (BEDROCK_MODEL_ID unset)
+    - snippets is empty (no context to ground the recommendation)
+    - analyzer.recommend() raises BedrockAnalysisError
+    - analyzer.recommend() returns an empty/blank string (defensive)
+    """
+    if analyzer is None or not snippets:
+        return LOCAL_FALLBACK_RECOMMENDATION
+    try:
+        result = analyzer.recommend(message, snippets)
+        return result if result and result.strip() else LOCAL_FALLBACK_RECOMMENDATION
+    except BedrockAnalysisError:
+        return LOCAL_FALLBACK_RECOMMENDATION
+
+
 @app.exception_handler(storage.TicketStoreError)
 def store_error_handler(request: Request, exc: storage.TicketStoreError) -> JSONResponse:
     return JSONResponse(status_code=500, content={"detail": str(exc)})
@@ -98,11 +129,18 @@ def create_ticket(
     analyzer: Annotated[BedrockAnalyzer | None, Depends(get_analyzer)],
 ) -> dict[str, Any]:
     fields, source = analyze_or_fallback(body.message, analyzer)
+    # Load past tickets BEFORE add_ticket so the new ticket is not in the corpus
+    past_tickets = storage.load_tickets()
+    kb_docs = load_kb_documents(get_kb_path())
+    snippets = retrieve_snippets(body.message, past_tickets, kb_docs)
+    recommended = recommend_or_fallback(body.message, snippets, analyzer)
     ticket: dict[str, Any] = {
         "id": str(uuid.uuid4()),
         "message": body.message,
         **fields,
         "source": source,
+        "recommended_solution": recommended,
+        "source_snippets": snippets,
     }
     storage.add_ticket(ticket)
     return ticket

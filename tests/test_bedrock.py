@@ -348,3 +348,77 @@ def test_get_analyzer_returns_bedrock_analyzer_when_model_id_set(
         result = get_analyzer()
 
     assert isinstance(result, BedrockAnalyzer)
+
+
+# ---------------------------------------------------------------------------
+# Task 4.2 – BedrockAnalyzer.recommend()
+# ---------------------------------------------------------------------------
+
+
+def test_recommend_returns_string_from_converse() -> None:
+    # Requirement 4.1: recommend() returns the Bedrock response text
+    canned_text = "Use our refund process to submit a request."
+    analyzer = _analyzer_with_client(FakeConverseClient(canned_text))
+    result = analyzer.recommend("broken item", ["past fix snippet"])
+    assert result == canned_text
+
+
+def test_recommend_calls_rate_limiter_once() -> None:
+    # Requirement 4.4: recommend() calls rate_limiter.wait() exactly once
+    wait_count = 0
+
+    class CountingLimiter:
+        def wait(self) -> None:
+            nonlocal wait_count
+            wait_count += 1
+
+    canned = "Recommended fix."
+    analyzer = BedrockAnalyzer(FakeConverseClient(canned), "m", CountingLimiter())  # type: ignore[arg-type]
+    analyzer.recommend("message", ["snippet"])
+    assert wait_count == 1
+    analyzer.recommend("message again", ["snippet"])
+    assert wait_count == 2
+
+
+def test_recommend_raises_on_throttle() -> None:
+    # Requirement 4.1: ClientError → BedrockAnalysisError
+    analyzer = _analyzer_with_client(FakeThrottleClient())
+    with pytest.raises(BedrockAnalysisError):
+        analyzer.recommend("message", ["snippet"])
+
+
+def test_recommend_raises_on_empty_response() -> None:
+    # recommend() raises when Bedrock returns an empty string
+    analyzer = _analyzer_with_client(FakeConverseClient(""))
+    with pytest.raises(BedrockAnalysisError):
+        analyzer.recommend("message", ["snippet"])
+
+
+def test_recommend_raises_on_whitespace_only_response() -> None:
+    analyzer = _analyzer_with_client(FakeConverseClient("   \n  "))
+    with pytest.raises(BedrockAnalysisError):
+        analyzer.recommend("message", ["snippet"])
+
+
+def test_recommend_passes_message_and_snippets_in_converse_call() -> None:
+    # Requirement 4.2: message and snippets sent to Bedrock; nothing else
+    fake_client = FakeConverseClient("fix")
+    analyzer = _analyzer_with_client(fake_client)
+    analyzer.recommend("test msg", ["s1", "s2"])
+
+    assert len(fake_client.calls) == 1
+    call = fake_client.calls[0]
+    content_text = call["messages"][0]["content"][0]["text"]
+    assert "test msg" in content_text
+    assert "s1" in content_text
+    assert "s2" in content_text
+
+
+def test_recommend_raises_on_missing_response_key() -> None:
+    class EmptyResponseClient:
+        def converse(self, **kwargs: Any) -> dict[str, Any]:
+            return {}  # missing "output"
+
+    analyzer = _analyzer_with_client(EmptyResponseClient())
+    with pytest.raises(BedrockAnalysisError):
+        analyzer.recommend("message", ["snippet"])

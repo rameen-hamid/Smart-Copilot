@@ -34,12 +34,18 @@ class FakeAnalyzer:
         self.calls.append(message)
         return self._response
 
+    def recommend(self, message: str, snippets: list[str]) -> str:
+        return "stub recommendation"
+
 
 class FakeThrottleAnalyzer:
     """Simulates a throttle by raising BedrockAnalysisError (same as the real analyzer does)."""
 
     def analyze(self, message: str) -> dict[str, Any]:
         raise BedrockAnalysisError("simulated throttle")
+
+    def recommend(self, message: str, snippets: list[str]) -> str:
+        return "stub recommendation"
 
 
 class FakeMalformedAnalyzer:
@@ -50,6 +56,9 @@ class FakeMalformedAnalyzer:
 
     def analyze(self, message: str) -> dict[str, Any]:
         return self._response
+
+    def recommend(self, message: str, snippets: list[str]) -> str:
+        return "stub recommendation"
 
 
 CANNED_VALID: dict[str, Any] = {
