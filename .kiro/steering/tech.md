@@ -12,7 +12,8 @@
 - Test: `uv run pytest`
 - Lint: `uv run ruff check`
 - Add a runtime dependency: `uv add <pkg>`. Add a dev dependency: `uv add --dev <pkg>`.
-- `pyproject.toml` defines no command aliases. Do not invent any.
+- Pre-review checks (ruff, gitleaks, semgrep): `uv run check`. Same as `uv run python scripts/check.py`.
+- `pyproject.toml` defines only the `check` command alias. Do not invent others.
 
 ## Data
 
