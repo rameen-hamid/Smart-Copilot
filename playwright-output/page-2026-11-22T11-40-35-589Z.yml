@@ -1,0 +1,12 @@
+- generic [active] [ref=f1e1]:
+  - heading "Ticket Desk" [level=1] [ref=f1e2]
+  - generic [ref=f1e3]:
+    - text: Customer message
+    - textbox "Customer message" [ref=f1e4]
+    - button "Submit" [ref=f1e5]
+  - heading "Tickets" [level=2] [ref=f1e6]
+  - generic [ref=f1e8]:
+    - generic [ref=f1e9]: "Category: technical | Urgency: low | Sentiment: positive"
+    - generic [ref=f1e10]: "Synthetic test B: The app crashes on login, thanks for checking."
+    - generic [ref=f1e11]: "Draft: Thank you for reporting this problem. Our technical team is looking into it. We will update you as soon as we know more."
+    - button "Delete" [ref=f1e12]
