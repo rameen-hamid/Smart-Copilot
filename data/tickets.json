@@ -1,0 +1,10 @@
+[
+  {
+    "id": "2b50eb74-3431-4a56-bb56-082c6556bbaf",
+    "message": "Synthetic test B: The app crashes on login, thanks for checking.",
+    "category": "technical",
+    "urgency": "low",
+    "sentiment": "positive",
+    "draft_reply": "Thank you for reporting this problem. Our technical team is looking into it. We will update you as soon as we know more."
+  }
+]
