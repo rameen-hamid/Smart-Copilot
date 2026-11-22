@@ -1,8 +1,0 @@
-- generic [active] [ref=e1]:
-  - heading "Ticket Desk" [level=1] [ref=e2]
-  - generic [ref=e3]:
-    - text: Customer message
-    - textbox "Customer message" [ref=e4]
-    - button "Submit" [ref=e5]
-  - heading "Tickets" [level=2] [ref=e6]
-  - generic [ref=e7]: No tickets yet.
