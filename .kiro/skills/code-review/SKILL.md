@@ -1,6 +1,6 @@
 ---
 name: code-review
-description: Reviews a Python (.py) file in this project (Smart Customer Support Copilot) for type hints on public functions, error handling on I/O and AWS calls, secrets in source, and tests that assert real behavior. Applies to reviews of .py files in this project, under src/smart_copilot/, tests/ or scripts/. Use whenever the user asks to review, audit, check, or give feedback on a Python file, module, or change here, even if they don't say "code review". Produces a summary with Critical, Warnings, Suggestions, and Passed sections.
+description: Use this skill for reviews of .py files in this project (Smart Customer Support Copilot), meaning Python files under src/smart_copilot/, tests/ or scripts/ in this repository. Use it whenever the user asks to review, audit, check, or give feedback on one of those files, even if they do not say "code review". Do not use it for other file types, for files outside this repository, or for general Python questions. Checks type hints on public functions, error handling on I/O and AWS calls, secrets in source, and tests that assert real behavior, and outputs Critical, Warnings, Suggestions, and Passed sections where every finding names its file and line.
 ---
 
 # Code review
@@ -49,19 +49,28 @@ For each public function or route in the file, look for a test that checks the e
 
 ## Output format
 
-Always produce exactly these four sections, in this order. Write "None." under a section with no findings. Cite `file:line` for every finding and give a one-line fix.
+Always produce exactly these four sections, in this order. Write "None." under a section with no findings.
+
+Every finding under Critical, Warnings, and Suggestions must start with the file and line it refers to:
+- Use the repository-relative path and the line number, e.g. `src/smart_copilot/main.py:48`. Never use a bare file name like `main.py:48`.
+- For a span, use a range: `src/smart_copilot/main.py:43-45`.
+- If the finding is about a test file, cite the test file and line. If it concerns both source and test, cite both.
+- If a finding is about something missing, cite the line of the code that lacks it (for example the `def` line of an untested function).
+- A finding you cannot tie to a file and line is not a finding. Re-read the file to find the line, or drop it.
+
+Give a one-line fix for every Critical and Warning finding.
 
 ```
 ## Code review: <path>
 
 ### Critical
-- <file:line> <what is wrong>. Fix: <one-line fix>.
+- `<path/to/file.py>:<line>` <what is wrong>. Fix: <one-line fix>.
 
 ### Warnings
-- <file:line> <what is wrong>. Fix: <one-line fix>.
+- `<path/to/file.py>:<line>` <what is wrong>. Fix: <one-line fix>.
 
 ### Suggestions
-- <file:line> <improvement>.
+- `<path/to/file.py>:<line>` <improvement>.
 
 ### Passed
 - <check that passed, with the evidence, e.g. "All 4 public functions have full type hints">.
