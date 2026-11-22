@@ -16,6 +16,15 @@ def tickets_file(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
 
 
 @pytest.fixture(autouse=True)
+def kb_path(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
+    """Point KB_PATH at a fresh empty temp directory for every test."""
+    path = tmp_path / "kb"
+    path.mkdir()
+    monkeypatch.setenv("KB_PATH", str(path))
+    return path
+
+
+@pytest.fixture(autouse=True)
 def reset_analyzer_override() -> Iterator[None]:
     """Ensure no get_analyzer override leaks between tests."""
     yield

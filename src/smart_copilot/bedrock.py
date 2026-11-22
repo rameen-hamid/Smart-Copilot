@@ -15,6 +15,14 @@ ALLOWED_CATEGORIES: frozenset[str] = frozenset({"billing", "technical", "account
 ALLOWED_URGENCIES: frozenset[str] = frozenset({"low", "medium", "high"})
 ALLOWED_SENTIMENTS: frozenset[str] = frozenset({"negative", "neutral", "positive"})
 
+RECOMMEND_SYSTEM_PROMPT = (
+    "You are a customer support assistant. "
+    "Using only the provided context snippets, write a specific, actionable "
+    "recommended solution for the customer's issue. "
+    "Return only the recommendation text with no markdown, no code blocks, "
+    "and no explanation."
+)
+
 SYSTEM_PROMPT = (
     "You are a customer support ticket classifier. "
     "For the given customer message, return ONLY a JSON object "
@@ -109,6 +117,35 @@ class BedrockAnalyzer:
             raise BedrockAnalysisError("Bedrock response is not valid JSON") from exc
         except (KeyError, TypeError, IndexError) as exc:
             raise BedrockAnalysisError(f"Unexpected Bedrock response shape: {exc}") from exc
+
+    def recommend(self, message: str, snippets: list[str]) -> str:
+        """Call the Bedrock Converse API with message and context snippets.
+
+        Returns the response text string (non-empty).
+        Raises BedrockAnalysisError on any failure or empty response.
+        """
+        self._rate_limiter.wait()
+        content_text = (
+            f"Customer message: {message}\n\nContext:\n" + "\n---\n".join(snippets)
+        )
+        try:
+            response = self._client.converse(
+                modelId=self._model_id,
+                system=[{"text": RECOMMEND_SYSTEM_PROMPT}],
+                messages=[{"role": "user", "content": [{"text": content_text}]}],
+            )
+            text: str = response["output"]["message"]["content"][0]["text"]
+        except botocore.exceptions.ClientError as exc:
+            raise BedrockAnalysisError(f"Bedrock client error in recommend: {exc}") from exc
+        except botocore.exceptions.BotoCoreError as exc:
+            raise BedrockAnalysisError(f"Bedrock transport error in recommend: {exc}") from exc
+        except (KeyError, TypeError, IndexError) as exc:
+            raise BedrockAnalysisError(
+                f"Unexpected Bedrock response shape in recommend: {exc}"
+            ) from exc
+        if not text.strip():
+            raise BedrockAnalysisError("Bedrock recommend returned an empty response")
+        return text
 
 
 # --- Shared rate limiter singleton ---
