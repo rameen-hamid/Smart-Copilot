@@ -169,7 +169,10 @@ def login(
         return HTMLResponse(login_page(INVALID_LOGIN), status_code=401)
     request.session.clear()
     request.session[SESSION_KEY] = username
-    return RedirectResponse("/", status_code=303)
+    # Serve the ticket desk HTML directly instead of redirecting.
+    # A redirect (or JS navigation) breaks inside Kiro's preview proxy because
+    # the proxy root is not the same as the app root.
+    return HTMLResponse(INDEX_HTML, status_code=200)
 
 
 @app.get("/", response_class=HTMLResponse)

@@ -50,7 +50,9 @@ def sign_in(test_client: TestClient) -> None:
         data={"username": FAKE_USERNAME, "password": FAKE_PASSWORD},
         follow_redirects=False,
     )
-    assert response.status_code == 303
+    # Login now returns 200 + JS navigation (instead of 303) so it works
+    # correctly behind proxy/preview environments like Kiro's built-in browser.
+    assert response.status_code == 200
 
 
 @pytest.fixture

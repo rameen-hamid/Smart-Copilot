@@ -1,6 +1,6 @@
 import html
 
-INDEX_HTML = """<!doctype html>
+INDEX_HTML = r"""<!doctype html>
 <html lang="en">
 <head>
 <meta charset="utf-8">
@@ -337,6 +337,15 @@ INDEX_HTML = """<!doctype html>
 </main>
 
 <script>
+// Auto-detect base URL so fetch calls work behind any proxy path (e.g. /proxy/8000/)
+const API_BASE = (() => {
+  let p = window.location.pathname.replace(/\/$/, "");
+  for (const sub of ["/login", "/tickets"]) {
+    if (p.endsWith(sub)) { p = p.slice(0, -sub.length); break; }
+  }
+  return window.location.origin + p;
+})();
+
 const list     = document.getElementById("tickets");
 const errorBox = document.getElementById("error");
 const msgBox   = document.getElementById("message");
@@ -353,8 +362,8 @@ msgBox.addEventListener("input", () => {
 
 // ── Redirect helper ──
 function toLoginIfRedirected(res) {
-  if (res.redirected && new URL(res.url).pathname === "/login") {
-    window.location = "/login"; return true;
+  if (res.redirected && new URL(res.url).pathname.endsWith("/login")) {
+    window.location = res.url; return true;
   }
   return false;
 }
@@ -386,7 +395,7 @@ function section(label, buildBody) {
 
 // ── Render ticket list ──
 async function load() {
-  const res = await fetch("/tickets");
+  const res = await fetch(API_BASE + "/tickets");
   if (toLoginIfRedirected(res)) return;
   if (!res.ok) {
     errorBox.textContent = "Could not load tickets (" + res.status + ")";
@@ -478,7 +487,7 @@ async function load() {
     del.addEventListener("click", async () => {
       del.disabled = true;
       del.textContent = "Deleting…";
-      const r = await fetch("/tickets/" + encodeURIComponent(t.id), { method: "DELETE" });
+      const r = await fetch(API_BASE + "/tickets/" + encodeURIComponent(t.id), { method: "DELETE" });
       if (toLoginIfRedirected(r)) return;
       errorBox.textContent = r.ok ? "" : "Could not delete (" + r.status + ")";
       await load();
@@ -497,7 +506,7 @@ document.getElementById("form").addEventListener("submit", async (event) => {
   submitBtn.textContent = "Analysing…";
   errorBox.textContent = "";
 
-  const res = await fetch("/tickets", {
+  const res = await fetch(API_BASE + "/tickets", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ message: msgBox.value }),
@@ -629,7 +638,7 @@ LOGIN_HTML = """<!doctype html>
     <h1>Smart Copilot</h1>
     <p>Sign in to access the ticket desk</p>
   </div>
-  <form method="post" action="/login">
+  <form method="post" action="login">
     <label for="username">Username</label>
     <input id="username" name="username" autocomplete="username"
            placeholder="agent username" required>
