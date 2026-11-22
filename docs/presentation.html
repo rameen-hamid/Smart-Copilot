@@ -1,0 +1,292 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Smart Copilot – Hackathon</title>
+<style>
+  :root {
+    --brand: #4f46e5; --brand2: #7c3aed; --accent: #06b6d4;
+    --dark: #0f172a; --muted: #94a3b8;
+    --high: #ef4444; --med: #f59e0b; --low: #22c55e;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+         background: var(--dark); color: #f1f5f9; overflow: hidden; }
+
+  .deck { width: 100vw; height: 100vh; position: relative; }
+  .slide {
+    position: absolute; inset: 0;
+    display: flex; flex-direction: column;
+    padding: 3.5rem 5rem;
+    opacity: 0; pointer-events: none;
+    transition: opacity .4s ease;
+  }
+  .slide.active { opacity: 1; pointer-events: all; }
+
+  .s1  { background: linear-gradient(135deg,#1e1b4b 0%,#312e81 50%,#0f172a 100%); }
+  .s2  { background: linear-gradient(135deg,#0c1a2e 0%,#0f172a 100%); }
+  .s3  { background: linear-gradient(135deg,#0f172a 0%,#1e1b4b 100%); }
+  .s4  { background: linear-gradient(135deg,#0f1724 0%,#0c1a2e 100%); }
+  .s5  { background: linear-gradient(135deg,#1e1b4b 0%,#312e81 100%); }
+  .s6  { background: radial-gradient(ellipse at 20% 50%,#1e1b4b 0%,#0f172a 70%); }
+  .s7  { background: linear-gradient(135deg,#0f172a 0%,#1e1b4b 100%); }
+
+  h1 { font-size: 2.6rem; font-weight: 800; line-height: 1.2;
+       background: linear-gradient(90deg,#a5b4fc,#c4b5fd,#67e8f9);
+       -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+  h2 { font-size: 1.9rem; font-weight: 700; color: #e2e8f0; margin-bottom: 1.5rem; }
+  h3 { font-size: 1rem; font-weight: 600; color: var(--accent); letter-spacing: .08em;
+       text-transform: uppercase; margin-bottom: .5rem; }
+  p  { color: #cbd5e1; line-height: 1.7; }
+  ul { list-style: none; padding: 0; }
+  li { color: #cbd5e1; padding: .4rem 0; padding-left: 1.6rem; position: relative; line-height: 1.6; }
+  li::before { content: "▸"; color: var(--brand); position: absolute; left: 0; font-size: .9rem; }
+
+  .tag {
+    display: inline-block; border-radius: 999px; padding: .25rem .75rem;
+    font-size: .72rem; font-weight: 700; text-transform: uppercase; letter-spacing: .05em;
+    margin: .2rem;
+  }
+  .tag-high   { background: #450a0a; color: #fca5a5; border: 1px solid #ef4444; }
+  .tag-brand  { background: #1e1b4b; color: #a5b4fc; border: 1px solid #4f46e5; }
+  .tag-cyan   { background: #083344; color: #67e8f9; border: 1px solid #06b6d4; }
+  .tag-purple { background: #2e1065; color: #d8b4fe; border: 1px solid #7c3aed; }
+
+  .card-grid { display: grid; grid-template-columns: repeat(2,1fr); gap: 1.25rem; margin-top: .5rem; }
+  .card-grid-3 { grid-template-columns: repeat(3,1fr); }
+  .card {
+    background: rgba(255,255,255,.05); border: 1px solid rgba(255,255,255,.1);
+    border-radius: 12px; padding: 1.25rem 1.5rem;
+  }
+
+  .hero-sub { font-size: 1.15rem; color: #94a3b8; margin: 1rem 0 2rem; }
+  .pill-row  { display: flex; flex-wrap: wrap; gap: .5rem; margin-top: .75rem; }
+
+  .num   { font-size: 2.4rem; font-weight: 800; color: var(--accent); line-height: 1; }
+
+  .quote {
+    border-left: 3px solid var(--brand); padding-left: 1rem;
+    font-size: 1.05rem; color: #cbd5e1; margin: 1rem 0;
+    font-style: italic;
+  }
+
+  .flow { display: flex; align-items: center; gap: .5rem; flex-wrap: wrap; margin: 1rem 0; }
+  .flow-step {
+    background: rgba(79,70,229,.2); border: 1px solid #4f46e5;
+    border-radius: 8px; padding: .5rem 1rem;
+    font-size: .82rem; font-weight: 600; color: #a5b4fc;
+  }
+  .flow-arrow { color: var(--muted); font-size: 1.1rem; }
+
+  .nav {
+    position: fixed; bottom: 2rem; right: 2.5rem;
+    display: flex; gap: .6rem; z-index: 99;
+  }
+  .nav button {
+    background: rgba(255,255,255,.1); border: 1px solid rgba(255,255,255,.2);
+    color: #fff; border-radius: 8px; width: 40px; height: 40px;
+    font-size: 1.1rem; cursor: pointer; transition: background .2s;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .nav button:hover { background: rgba(79,70,229,.5); }
+
+  .progress { position: fixed; bottom: 2.3rem; left: 50%; transform: translateX(-50%); display: flex; gap: .4rem; }
+  .dot { width: 7px; height: 7px; border-radius: 50%; background: rgba(255,255,255,.25); transition: background .3s; cursor: pointer; }
+  .dot.on { background: var(--brand); }
+
+  .slide-num { position: absolute; top: 1.5rem; right: 2.5rem; font-size: .78rem; color: var(--muted); }
+  .title-logo { font-size: 3rem; margin-bottom: 1rem; }
+</style>
+</head>
+<body>
+<div class="deck">
+
+  <!-- 1 Title -->
+  <div class="slide s1 active">
+    <div style="flex:1;display:flex;flex-direction:column;justify-content:center">
+      <div class="title-logo">🎫</div>
+      <h1>Smart Customer<br>Support Copilot</h1>
+      <p class="hero-sub">AI-assisted ticket triage, classification, and grounded recommendations — built in one hackathon sprint.</p>
+      <div class="pill-row">
+        <span class="tag tag-brand">Python 3.12</span>
+        <span class="tag tag-brand">FastAPI</span>
+        <span class="tag tag-cyan">Amazon Bedrock</span>
+        <span class="tag tag-purple">Kiro Agents</span>
+        <span class="tag tag-brand">CDK</span>
+      </div>
+    </div>
+    <div class="slide-num">1 / 7</div>
+  </div>
+
+  <!-- 2 Problem -->
+  <div class="slide s2">
+    <h3>The Problem</h3>
+    <h2>Support agents read every message manually<br>before they know what to do with it.</h2>
+    <div class="card-grid" style="margin-top:1.5rem">
+      <div class="card">
+        <h3>What agents do today</h3>
+        <ul>
+          <li>Read each message in full</li>
+          <li>Decide the category by feel</li>
+          <li>Guess whether it is urgent</li>
+          <li>Write a reply from scratch</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3>What they actually need</h3>
+        <ul>
+          <li>Category surfaced instantly</li>
+          <li>Urgency sorted — high first</li>
+          <li>Customer sentiment visible</li>
+          <li>A draft and a grounded recommendation ready</li>
+        </ul>
+      </div>
+    </div>
+    <div class="slide-num">2 / 7</div>
+  </div>
+
+  <!-- 3 Who -->
+  <div class="slide s3">
+    <h3>Who it is for</h3>
+    <h2>One support agent. Full control.</h2>
+    <div class="quote">"The agent checks the draft before anything is sent. Drafts are suggestions, never sent automatically."</div>
+    <div class="card-grid" style="margin-top:1rem">
+      <div class="card">
+        <div class="num">⬇ Triage time</div>
+        <p style="margin-top:.4rem;font-size:.88rem">Queue sorted high → medium → low automatically. The agent sees what matters first.</p>
+      </div>
+      <div class="card">
+        <div class="num">⬆ Reply quality</div>
+        <p style="margin-top:.4rem;font-size:.88rem">Bedrock-grounded recommendations cite past tickets and KB articles. The agent edits instead of writes.</p>
+      </div>
+    </div>
+    <div class="slide-num">3 / 7</div>
+  </div>
+
+  <!-- 4 Features -->
+  <div class="slide s4">
+    <h3>Features</h3>
+    <h2>Five shipped features</h2>
+    <div class="card-grid" style="margin-top:.75rem;grid-template-columns:repeat(3,1fr)">
+      <div class="card">
+        <h3>🔐 Sign-in</h3>
+        <p style="font-size:.82rem;color:#94a3b8">PBKDF2 hashed password. Signed session cookie. All routes protected.</p>
+      </div>
+      <div class="card">
+        <h3>📋 Ticket queue</h3>
+        <p style="font-size:.82rem;color:#94a3b8">Create, list sorted by urgency, delete. Persisted in data/tickets.json.</p>
+      </div>
+      <div class="card">
+        <h3>🧠 Bedrock analysis</h3>
+        <p style="font-size:.82rem;color:#94a3b8">Category, urgency, sentiment, draft — from Bedrock. Local classifier as fallback.</p>
+      </div>
+      <div class="card">
+        <h3>💡 Recommendation</h3>
+        <p style="font-size:.82rem;color:#94a3b8">Top-3 KB snippets by keyword overlap, sent to Bedrock for a grounded solution.</p>
+      </div>
+      <div class="card">
+        <h3>☁️ CDK stack</h3>
+        <p style="font-size:.82rem;color:#94a3b8">Lambda + API Gateway + DynamoDB + S3 + Cognito. Synthesises cleanly.</p>
+      </div>
+      <div class="card">
+        <h3>🎨 UI</h3>
+        <p style="font-size:.82rem;color:#94a3b8">Responsive FastAPI page. Colour-coded urgency badges. Collapsible drafts.</p>
+      </div>
+    </div>
+    <div class="slide-num">4 / 7</div>
+  </div>
+
+  <!-- 5 Specs -->
+  <div class="slide s5">
+    <h3>How it was built</h3>
+    <h2>Spec first. Code second.</h2>
+    <div class="flow">
+      <div class="flow-step">Spec agent asks</div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-step">BRD + requirements</div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-step">Design + tasks</div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-step">Build agent implements</div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-step">Reviewer audits</div>
+    </div>
+    <div class="card-grid" style="margin-top:.75rem">
+      <div class="card">
+        <h3>Spec folders (.kiro/specs/)</h3>
+        <ul style="font-size:.82rem">
+          <li>ticket-desk</li>
+          <li>bedrock-analysis</li>
+          <li>agent-desk</li>
+          <li>agent-sign-in</li>
+          <li>cdk-stack</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3>Agent guardrails</h3>
+        <ul style="font-size:.82rem">
+          <li>Steering files in .kiro/steering/</li>
+          <li>Build agent denied git push &amp; merge</li>
+          <li>Reviewer cannot edit or approve</li>
+          <li>verify-first: no invented API calls</li>
+          <li>Tests must pass before "done"</li>
+        </ul>
+      </div>
+    </div>
+    <div class="slide-num">5 / 7</div>
+  </div>
+
+  <!-- 6 Demo -->
+  <div class="slide s6">
+    <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center">
+      <div style="font-size:4rem;margin-bottom:1rem">▶</div>
+      <h2 style="font-size:2.8rem">Demo</h2>
+      <p class="hero-sub" style="max-width:500px">Live walkthrough — sign in, submit a ticket, see Bedrock analysis and recommendation, delete.</p>
+    </div>
+    <div class="slide-num">6 / 7</div>
+  </div>
+
+  <!-- 7 Lessons -->
+  <div class="slide s7">
+    <h3>Lessons learned</h3>
+    <h2>What we took away</h2>
+    <ul style="margin-top:.75rem">
+      <li>An empty brief made the agent <strong>stop and ask</strong> rather than guess — one numbered batch with proposed defaults.</li>
+      <li>Bedrock runs at ticket creation and <strong>falls back locally</strong> when it fails, is throttled, or BEDROCK_MODEL_ID is unset — always 201.</li>
+      <li>The reviewer and tests <strong>state what they could not prove</strong> — rate-limiter under concurrent load is in the notes, not the assertions.</li>
+      <li>A <strong>push fails when the GitHub account has no write access</strong> — the build agent printed the exact command and stopped.</li>
+    </ul>
+    <div class="pill-row" style="margin-top:1.5rem">
+      <span class="tag tag-high">349 tests passing</span>
+      <span class="tag tag-brand">ruff clean</span>
+      <span class="tag tag-cyan">5 specs merged</span>
+      <span class="tag tag-purple">0 invented APIs</span>
+    </div>
+    <div class="slide-num">7 / 7</div>
+  </div>
+
+</div>
+
+<nav class="nav">
+  <button onclick="move(-1)">&#8249;</button>
+  <button onclick="move(1)">&#8250;</button>
+</nav>
+<div class="progress" id="dots"></div>
+
+<script>
+  const slides = document.querySelectorAll('.slide');
+  let cur = 0;
+  const dots = document.getElementById('dots');
+  slides.forEach((_,i) => {
+    const d = document.createElement('div');
+    d.className = 'dot' + (i===0?' on':'');
+    d.onclick = () => go(i);
+    dots.appendChild(d);
+  });
+  function go(n){ slides[cur].classList.remove('active'); dots.children[cur].classList.remove('on'); cur=(n+slides.length)%slides.length; slides[cur].classList.add('active'); dots.children[cur].classList.add('on'); }
+  function move(d){ go(cur+d); }
+  document.addEventListener('keydown', e => { if(e.key==='ArrowRight'||e.key===' ') move(1); if(e.key==='ArrowLeft') move(-1); });
+</script>
+</body>
+</html>
